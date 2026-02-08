@@ -1,60 +1,78 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/products.model');  // correct path
+const Product = require('../models/products.model');
+const path = require('path');
 
-// GET all products
-router.get('/', async (req, res) => {
+
+// HOME PAGE (serve HTML)
+router.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+
+// GET ALL PRODUCTS
+router.get('/products', async (req, res) => {
     try {
         const products = await Product.find();
-        res.status(200).json(products);
+        res.json(products);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
-// GET product by ID
-router.get('/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const product = await Product.findById(id);
 
-        if (!product) {
-            return res.status(404).json({ message: "Product not found" });
-        }       
-        res.status(200).json(product);
+// ADD PRODUCT FROM FORM
+router.post('/add-product', async (req, res) => {
+    try {
+        await Product.create(req.body);
+        res.redirect('/');
+    } catch (err) {
+        res.status(500).send("Error adding product");
     }
-    catch (error) { 
-        res.status(500).json({ message: error.message });   
-        }
 });
 
-// ADD product
-router.post('/', async (req, res) => {
+
+// SEARCH PRODUCT BY NAME
+router.get('/products/:name', async (req, res) => {
     try {
-        const product = await Product.create(req.body);
-        res.status(201).json({
-            message: "Product added successfully",
-            data: product
+        const name = req.params.name;
+
+        const products = await Product.find({
+            name: { $regex: name, $options: 'i' }
         });
+
+        if (products.length === 0) {
+            return res.status(404).json({
+                message: `No products found with name: ${name}`
+            });
+        }
+
+        res.json(products);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
-// DELETE product
-router.delete('/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const product = await Product.findByIdAndDelete(id);
 
-        if (!product) {
-            return res.status(404).json({ message: "Product not found" });
+// DELETE PRODUCT BY NAME
+router.delete('/products/:name', async (req, res) => {
+    try {
+        const name = req.params.name;
+
+        const result = await Product.deleteMany({
+            name: { $regex: name, $options: 'i' }
+        });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({
+                message: `No products found with name: ${name}`
+            });
         }
 
-        res.status(200).json({
-            message: "Product deleted successfully",
-            data: product
+        res.json({
+            message: `${result.deletedCount} product(s) deleted`
         });
+
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
