@@ -19,7 +19,7 @@ mongoose.connect("mongodb+srv://bharadwajapi:bharath@api.0z3q3uf.mongodb.net/tod
 app.use('/', productRoutes);
 
 // start server
-const port = 1000;
+const port = 2000;
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
